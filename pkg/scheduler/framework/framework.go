@@ -42,7 +42,7 @@ func OpenSession(cache cache.Cache, tiers []conf.Tier, configurations []conf.Con
 				plugin := pb(plugin.Arguments)
 				ssn.plugins[plugin.Name()] = plugin
 				onSessionOpenStart := time.Now()
-				plugin.OnSessionOpen(ssn)
+				plugin.OnSessionOpen(ssn) // 依次执行 plugin session open
 				metrics.UpdatePluginDuration(plugin.Name(), metrics.OnSessionOpen, metrics.Duration(onSessionOpenStart))
 			}
 		}
@@ -54,7 +54,7 @@ func OpenSession(cache cache.Cache, tiers []conf.Tier, configurations []conf.Con
 func CloseSession(ssn *Session) {
 	for _, plugin := range ssn.plugins {
 		onSessionCloseStart := time.Now()
-		plugin.OnSessionClose(ssn)
+		plugin.OnSessionClose(ssn) // 依次执行 plugin session close
 		metrics.UpdatePluginDuration(plugin.Name(), metrics.OnSessionClose, metrics.Duration(onSessionCloseStart))
 	}
 

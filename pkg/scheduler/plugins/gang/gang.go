@@ -78,7 +78,7 @@ func (gp *gangPlugin) OnSessionOpen(ssn *framework.Session) {
 		return nil
 	}
 
-	ssn.AddJobValidFn(gp.Name(), validJobFn)
+	ssn.AddJobValidFn(gp.Name(), validJobFn) // 注册 job valid 函数
 
 	preemptableFn := func(preemptor *api.TaskInfo, preemptees []*api.TaskInfo) ([]*api.TaskInfo, int) {
 		var victims []*api.TaskInfo
@@ -106,7 +106,7 @@ func (gp *gangPlugin) OnSessionOpen(ssn *framework.Session) {
 
 	// TODO(k82cn): Support preempt/reclaim batch job.
 	ssn.AddReclaimableFn(gp.Name(), preemptableFn)
-	ssn.AddPreemptableFn(gp.Name(), preemptableFn)
+	ssn.AddPreemptableFn(gp.Name(), preemptableFn) // 注册 preemptable 函数
 
 	jobOrderFn := func(l, r interface{}) int {
 		lv := l.(*api.JobInfo)

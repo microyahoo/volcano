@@ -58,13 +58,13 @@ type ServerOption struct {
 	KeyData           []byte
 	CaCertData        []byte
 	SchedulerNames    []string
-	SchedulerConf     string
-	SchedulePeriod    time.Duration
+	SchedulerConf     string        // schduler config
+	SchedulePeriod    time.Duration // default 1s
 	// leaderElection defines the configuration of leader election.
 	LeaderElection config.LeaderElectionConfiguration
 	// Deprecated: use ResourceNamespace instead.
 	LockObjectNamespace string
-	DefaultQueue        string
+	DefaultQueue        string // default queue
 	PrintVersion        bool
 	EnableMetrics       bool
 	ListenAddress       string
@@ -84,7 +84,7 @@ type ServerOption struct {
 	NodeSelector      []string
 	CacheDumpFileDir  string
 	EnableCacheDumper bool
-	NodeWorkerThreads uint32
+	NodeWorkerThreads uint32 // default 20
 
 	// IgnoredCSIProvisioners contains a list of provisioners, and pod request pvc with these provisioners will
 	// not be counted in pod pvc resource request and node.Allocatable, because the spec.drivers of csinode resource
@@ -117,8 +117,8 @@ func (s *ServerOption) AddFlags(fs *pflag.FlagSet) {
 	// volcano scheduler will ignore pods with scheduler names other than specified with the option
 	fs.StringArrayVar(&s.SchedulerNames, "scheduler-name", []string{defaultSchedulerName}, "vc-scheduler will handle pods whose .spec.SchedulerName is same as scheduler-name")
 	fs.StringVar(&s.SchedulerConf, "scheduler-conf", "", "The absolute path of scheduler configuration file")
-	fs.DurationVar(&s.SchedulePeriod, "schedule-period", defaultSchedulerPeriod, "The period between each scheduling cycle")
-	fs.StringVar(&s.DefaultQueue, "default-queue", defaultQueue, "The default queue name of the job")
+	fs.DurationVar(&s.SchedulePeriod, "schedule-period", defaultSchedulerPeriod, "The period between each scheduling cycle") // default 1s
+	fs.StringVar(&s.DefaultQueue, "default-queue", defaultQueue, "The default queue name of the job")                        // default queue
 	fs.BoolVar(&s.PrintVersion, "version", false, "Show version and quit")
 	fs.StringVar(&s.ListenAddress, "listen-address", defaultListenAddress, "The address to listen on for HTTP requests.")
 	fs.StringVar(&s.HealthzBindAddress, "healthz-address", defaultHealthzAddress, "The address to listen on for the health check server.")
@@ -144,7 +144,7 @@ func (s *ServerOption) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&s.NodeSelector, "node-selector", nil, "volcano only work with the labeled node, like: --node-selector=volcano.sh/role:train --node-selector=volcano.sh/role:serving")
 	fs.BoolVar(&s.EnableCacheDumper, "cache-dumper", true, "Enable the cache dumper, it's true by default")
 	fs.StringVar(&s.CacheDumpFileDir, "cache-dump-dir", "/tmp", "The target dir where the json file put at when dump cache info to json file")
-	fs.Uint32Var(&s.NodeWorkerThreads, "node-worker-threads", defaultNodeWorkers, "The number of threads syncing node operations.")
+	fs.Uint32Var(&s.NodeWorkerThreads, "node-worker-threads", defaultNodeWorkers, "The number of threads syncing node operations.") // default 20
 	fs.StringSliceVar(&s.IgnoredCSIProvisioners, "ignored-provisioners", nil, "The provisioners that will be ignored during pod pvc request computation and preemption.")
 }
 

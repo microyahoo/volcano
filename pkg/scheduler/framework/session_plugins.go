@@ -116,7 +116,7 @@ func (ssn *Session) AddAllocatableFn(name string, fn api.AllocatableFn) {
 }
 
 // AddJobValidFn add jobvalid function
-func (ssn *Session) AddJobValidFn(name string, fn api.ValidateExFn) {
+func (ssn *Session) AddJobValidFn(name string, fn api.ValidateExFn) { // 注册 job valid 函数, 默认 gang
 	ssn.jobValidFns[name] = fn
 }
 
@@ -207,11 +207,11 @@ func (ssn *Session) Preemptable(preemptor *api.TaskInfo, preemptees []*api.TaskI
 
 	for _, tier := range ssn.Tiers {
 		for _, plugin := range tier.Plugins {
-			if !isEnabled(plugin.EnabledPreemptable) {
+			if !isEnabled(plugin.EnabledPreemptable) { // 判断 plugin 是否支持抢占
 				continue
 			}
 
-			pf, found := ssn.preemptableFns[plugin.Name]
+			pf, found := ssn.preemptableFns[plugin.Name] // 依次执行注册的 preemptable 函数，然后求每次的交集
 			if !found {
 				continue
 			}
@@ -539,7 +539,7 @@ func (ssn *Session) JobOrderFn(l, r interface{}) bool {
 	// If no job order funcs, order job by CreationTimestamp first, then by UID.
 	lv := l.(*api.JobInfo)
 	rv := r.(*api.JobInfo)
-	if lv.CreationTimestamp.Equal(&rv.CreationTimestamp) {
+	if lv.CreationTimestamp.Equal(&rv.CreationTimestamp) { // 如果没有指定 job order 函数，则首先比较创建时间，接着比较 UID
 		return lv.UID < rv.UID
 	}
 	return lv.CreationTimestamp.Before(&rv.CreationTimestamp)
@@ -598,7 +598,7 @@ func (ssn *Session) QueueOrderFn(l, r interface{}) bool {
 func (ssn *Session) TaskCompareFns(l, r interface{}) int {
 	for _, tier := range ssn.Tiers {
 		for _, plugin := range tier.Plugins {
-			if !isEnabled(plugin.EnabledTaskOrder) {
+			if !isEnabled(plugin.EnabledTaskOrder) { // 默认开启
 				continue
 			}
 			tof, found := ssn.taskOrderFns[plugin.Name]

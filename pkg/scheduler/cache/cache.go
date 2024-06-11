@@ -111,7 +111,7 @@ type SchedulerCache struct {
 	pvInformer                 infov1.PersistentVolumeInformer
 	pvcInformer                infov1.PersistentVolumeClaimInformer
 	scInformer                 storagev1.StorageClassInformer
-	pcInformer                 schedv1.PriorityClassInformer
+	pcInformer                 schedv1.PriorityClassInformer // priority class informer
 	quotaInformer              infov1.ResourceQuotaInformer
 	csiNodeInformer            storagev1.CSINodeInformer
 	csiDriverInformer          storagev1.CSIDriverInformer
@@ -144,9 +144,9 @@ type SchedulerCache struct {
 	informerFactory   informers.SharedInformerFactory
 	vcInformerFactory vcinformer.SharedInformerFactory
 
-	BindFlowChannel chan *schedulingapi.TaskInfo
+	BindFlowChannel chan *schedulingapi.TaskInfo // channel 长度 5000
 	bindCache       []*schedulingapi.TaskInfo
-	batchNum        int
+	batchNum        int // 如果环境变量没有指定的话，默认为 1
 
 	// A map from image name to its imageState.
 	imageStates map[string]*imageState
@@ -177,7 +177,7 @@ func (db *DefaultBinder) Bind(kubeClient kubernetes.Interface, tasks []*scheduli
 	var errTasks []*schedulingapi.TaskInfo
 	for _, task := range tasks {
 		p := task.Pod
-		if err := db.kubeclient.CoreV1().Pods(p.Namespace).Bind(context.TODO(),
+		if err := db.kubeclient.CoreV1().Pods(p.Namespace).Bind(context.TODO(), // 将 pod bind 到指定节点
 			&v1.Binding{
 				ObjectMeta: metav1.ObjectMeta{Namespace: p.Namespace, Name: p.Name, UID: p.UID, Annotations: p.Annotations},
 				Target: v1.ObjectReference{
@@ -445,7 +445,7 @@ func (sc *SchedulerCache) updateNodeSelectors(nodeSelectors []string) {
 
 // setBatchBindParallel configure the parallel when binding tasks to apiserver
 func (sc *SchedulerCache) setBatchBindParallel() {
-	sc.BindFlowChannel = make(chan *schedulingapi.TaskInfo, 5000)
+	sc.BindFlowChannel = make(chan *schedulingapi.TaskInfo, 5000) // 5000
 	var batchNum int
 	batchNum, err := strconv.Atoi(os.Getenv("BATCH_BIND_NUM"))
 	if err == nil && batchNum > 0 {
@@ -524,7 +524,7 @@ func newSchedulerCache(config *rest.Config, schedulerNames []string, defaultQueu
 	}
 
 	// create default queue
-	newDefaultQueue(vcClient, defaultQueue)
+	newDefaultQueue(vcClient, defaultQueue) // 创建默认的 default queue
 	klog.Infof("Create init queue named default")
 
 	errTaskRateLimiter := workqueue.NewMaxOfRateLimiter(
@@ -655,8 +655,8 @@ func (sc *SchedulerCache) addEventHandler() {
 				klog.Infof("node %s ignore add/update/delete into schedulerCache", node.Name)
 				return false
 			},
-			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc:    sc.AddNode,
+			Handler: cache.ResourceEventHandlerFuncs{ // 监听 node 事件
+				AddFunc:    sc.AddNode, // 添加 node 到 cache
 				UpdateFunc: sc.UpdateNode,
 				DeleteFunc: sc.DeleteNode,
 			},
@@ -708,7 +708,7 @@ func (sc *SchedulerCache) addEventHandler() {
 					return false
 				}
 			},
-			Handler: cache.ResourceEventHandlerFuncs{
+			Handler: cache.ResourceEventHandlerFuncs{ // 监听 pod 事件
 				AddFunc:    sc.AddPod,
 				UpdateFunc: sc.UpdatePod,
 				DeleteFunc: sc.DeletePod,
@@ -725,7 +725,7 @@ func (sc *SchedulerCache) addEventHandler() {
 	}
 
 	sc.quotaInformer = informerFactory.Core().V1().ResourceQuotas()
-	sc.quotaInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	sc.quotaInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{ // 监听 resource quota
 		AddFunc:    sc.AddResourceQuota,
 		UpdateFunc: sc.UpdateResourceQuota,
 		DeleteFunc: sc.DeleteResourceQuota,
@@ -736,7 +736,7 @@ func (sc *SchedulerCache) addEventHandler() {
 
 	// create informer for PodGroup(v1beta1) information
 	sc.podGroupInformerV1beta1 = vcinformers.Scheduling().V1beta1().PodGroups()
-	sc.podGroupInformerV1beta1.Informer().AddEventHandler(
+	sc.podGroupInformerV1beta1.Informer().AddEventHandler( // 监听 podgroup
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
 				var pg *vcv1beta1.PodGroup
@@ -765,7 +765,7 @@ func (sc *SchedulerCache) addEventHandler() {
 
 	// create informer(v1beta1) for Queue information
 	sc.queueInformerV1beta1 = vcinformers.Scheduling().V1beta1().Queues()
-	sc.queueInformerV1beta1.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	sc.queueInformerV1beta1.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{ // 监听 queue
 		AddFunc:    sc.AddQueueV1beta1,
 		UpdateFunc: sc.UpdateQueueV1beta1,
 		DeleteFunc: sc.DeleteQueueV1beta1,
@@ -791,12 +791,12 @@ func (sc *SchedulerCache) Run(stopCh <-chan struct{}) {
 	}
 
 	// Re-sync error tasks.
-	go wait.Until(sc.processResyncTask, 0, stopCh)
+	go wait.Until(sc.processResyncTask, 0, stopCh) // 处理失败的 tasks
 
 	// Cleanup jobs.
 	go wait.Until(sc.processCleanupJob, 0, stopCh)
 
-	go wait.Until(sc.processBindTask, time.Millisecond*20, stopCh)
+	go wait.Until(sc.processBindTask, time.Millisecond*20, stopCh) // 处理 task bind
 
 	// Get metrics data
 	klog.V(3).Infof("Start metrics collection, metricsConf is %v", sc.metricsConf)
@@ -902,7 +902,7 @@ func (sc *SchedulerCache) Bind(tasks []*schedulingapi.TaskInfo) {
 		for _, task := range errTasks {
 			klog.V(2).Infof("resyncTask task %s", task.Name)
 			sc.VolumeBinder.RevertVolumes(task, task.PodVolumes)
-			sc.resyncTask(task)
+			sc.resyncTask(task) // 失败的 task 会重新加入到 errTasks 中
 		}
 	}
 }
@@ -1229,7 +1229,7 @@ func (sc *SchedulerCache) AddBindTask(taskInfo *schedulingapi.TaskInfo) error {
 		return err
 	}
 
-	sc.BindFlowChannel <- taskInfo
+	sc.BindFlowChannel <- taskInfo // 将 taskInfo 写入 BindFlowChannel，cache 会处理 bind task 流程
 
 	return nil
 }

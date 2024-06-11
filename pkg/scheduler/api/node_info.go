@@ -151,7 +151,7 @@ func NewNodeInfo(node *v1.Node) *NodeInfo {
 
 	nodeInfo.setOversubscription(node)
 
-	if node != nil {
+	if node != nil { // 设置/更新 node 资源
 		nodeInfo.Name = node.Name
 		nodeInfo.Node = node
 		nodeInfo.Idle = NewResource(node.Status.Allocatable).Add(nodeInfo.OversubscriptionResource)
@@ -446,7 +446,7 @@ func (ni *NodeInfo) AddTask(task *TaskInfo) error {
 	}
 
 	// Update task node name upon successful task addition.
-	task.NodeName = ni.Name
+	task.NodeName = ni.Name // 更新 task NodeName
 	ti.NodeName = ni.Name
 	ni.Tasks[key] = ti
 

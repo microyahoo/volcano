@@ -141,7 +141,7 @@ type TaskInfo struct {
 func getJobID(pod *v1.Pod) JobID {
 	if gn, found := pod.Annotations[v1beta1.KubeGroupNameAnnotationKey]; found && len(gn) != 0 {
 		// Make sure Pod and PodGroup belong to the same namespace.
-		jobID := fmt.Sprintf("%s/%s", pod.Namespace, gn)
+		jobID := fmt.Sprintf("%s/%s", pod.Namespace, gn) // 根据 pod Annotation 中的 group-name 生成对应的 job id
 		return JobID(jobID)
 	}
 
@@ -159,7 +159,7 @@ func getTaskID(pod *v1.Pod) TaskID {
 const TaskPriorityAnnotation = "volcano.sh/task-priority"
 
 // NewTaskInfo creates new taskInfo object for a Pod
-func NewTaskInfo(pod *v1.Pod) *TaskInfo {
+func NewTaskInfo(pod *v1.Pod) *TaskInfo { // 为 pod 创建 taskInfo
 	initResReq := GetPodResourceRequest(pod)
 	resReq := initResReq
 	bestEffort := initResReq.IsEmpty()

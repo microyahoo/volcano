@@ -61,7 +61,7 @@ func (pp *priorityPlugin) OnSessionOpen(ssn *framework.Session) {
 	}
 
 	// Add Task Order function
-	ssn.AddTaskOrderFn(pp.Name(), taskOrderFn)
+	ssn.AddTaskOrderFn(pp.Name(), taskOrderFn) // 注册 task order 函数,即根据 task 优先级排序
 
 	jobOrderFn := func(l, r interface{}) int {
 		lv := l.(*api.JobInfo)
@@ -81,7 +81,7 @@ func (pp *priorityPlugin) OnSessionOpen(ssn *framework.Session) {
 		return 0
 	}
 
-	ssn.AddJobOrderFn(pp.Name(), jobOrderFn)
+	ssn.AddJobOrderFn(pp.Name(), jobOrderFn) // 注册 job order 函数,即根据 job 优先级排序
 
 	preemptableFn := func(preemptor *api.TaskInfo, preemptees []*api.TaskInfo) ([]*api.TaskInfo, int) {
 		preemptorJob := ssn.Jobs[preemptor.Job]

@@ -68,7 +68,7 @@ func UnmarshalSchedulerConf(confStr string) ([]framework.Action, []conf.Tier, []
 			if tier.Plugins[j].Name == "proportion" {
 				proportion = true
 			}
-			plugins.ApplyPluginConfDefaults(&schedulerConf.Tiers[i].Plugins[j])
+			plugins.ApplyPluginConfDefaults(&schedulerConf.Tiers[i].Plugins[j]) // 默认全部开启 plugin 选项
 		}
 		if hdrf && proportion {
 			return nil, nil, nil, nil, fmt.Errorf("proportion and drf with hierarchy enabled conflicts")
@@ -77,7 +77,7 @@ func UnmarshalSchedulerConf(confStr string) ([]framework.Action, []conf.Tier, []
 
 	actionNames := strings.Split(schedulerConf.Actions, ",")
 	for _, actionName := range actionNames {
-		if action, found := framework.GetAction(strings.TrimSpace(actionName)); found {
+		if action, found := framework.GetAction(strings.TrimSpace(actionName)); found { // 根据配置文件中指定的 actions 来获取实际注册的 actions
 			actions = append(actions, action)
 		} else {
 			return nil, nil, nil, nil, fmt.Errorf("failed to find Action %s, ignore it", actionName)

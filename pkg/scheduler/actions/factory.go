@@ -26,7 +26,7 @@ import (
 	"volcano.sh/volcano/pkg/scheduler/framework"
 )
 
-func init() {
+func init() { // 注册 action
 	framework.RegisterAction(reclaim.New())
 	framework.RegisterAction(allocate.New())
 	framework.RegisterAction(backfill.New())

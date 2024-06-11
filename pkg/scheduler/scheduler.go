@@ -61,7 +61,7 @@ func NewScheduler(config *rest.Config, opt *options.ServerOption) (*Scheduler, e
 	if opt.SchedulerConf != "" {
 		var err error
 		path := filepath.Dir(opt.SchedulerConf)
-		watcher, err = filewatcher.NewFileWatcher(path)
+		watcher, err = filewatcher.NewFileWatcher(path) // watch scheduler config file
 		if err != nil {
 			return nil, fmt.Errorf("failed creating filewatcher for %s: %v", opt.SchedulerConf, err)
 		}
@@ -89,7 +89,7 @@ func (pc *Scheduler) Run(stopCh <-chan struct{}) {
 	pc.cache.Run(stopCh)
 	pc.cache.WaitForCacheSync(stopCh)
 	klog.V(2).Infof("Scheduler completes Initialization and start to run")
-	go wait.Until(pc.runOnce, pc.schedulePeriod, stopCh)
+	go wait.Until(pc.runOnce, pc.schedulePeriod, stopCh) // 默认每秒执行一次
 	if options.ServerOpts.EnableCacheDumper {
 		pc.dumper.ListenForSignal(stopCh)
 	}
@@ -115,7 +115,7 @@ func (pc *Scheduler) runOnce() {
 		conf.EnabledActionMap[action.Name()] = true
 	}
 
-	ssn := framework.OpenSession(pc.cache, plugins, configurations)
+	ssn := framework.OpenSession(pc.cache, plugins, configurations) // 依次执行 plugin session open, 基本上都是注册函数
 	defer func() {
 		framework.CloseSession(ssn)
 		metrics.UpdateE2eDuration(metrics.Duration(scheduleStartTime))
@@ -123,12 +123,12 @@ func (pc *Scheduler) runOnce() {
 
 	for _, action := range actions {
 		actionStartTime := time.Now()
-		action.Execute(ssn)
+		action.Execute(ssn) // 依次执行 actions
 		metrics.UpdateActionDuration(action.Name(), metrics.Duration(actionStartTime))
 	}
 }
 
-func (pc *Scheduler) loadSchedulerConf() {
+func (pc *Scheduler) loadSchedulerConf() { // 加载 scheduler config file
 	klog.V(4).Infof("Start loadSchedulerConf ...")
 	defer func() {
 		actions, plugins := pc.getSchedulerConf()
@@ -137,7 +137,7 @@ func (pc *Scheduler) loadSchedulerConf() {
 
 	var err error
 	pc.once.Do(func() {
-		pc.actions, pc.plugins, pc.configurations, pc.metricsConf, err = UnmarshalSchedulerConf(DefaultSchedulerConf)
+		pc.actions, pc.plugins, pc.configurations, pc.metricsConf, err = UnmarshalSchedulerConf(DefaultSchedulerConf) // 默认的 scheduler config
 		if err != nil {
 			klog.Errorf("unmarshal Scheduler config %s failed: %v", DefaultSchedulerConf, err)
 			panic("invalid default configuration")
@@ -146,7 +146,7 @@ func (pc *Scheduler) loadSchedulerConf() {
 
 	var config string
 	if len(pc.schedulerConf) != 0 {
-		confData, err := os.ReadFile(pc.schedulerConf)
+		confData, err := os.ReadFile(pc.schedulerConf) // 读取 scheduler config file
 		if err != nil {
 			klog.Errorf("Failed to read the Scheduler config in '%s', using previous configuration: %v",
 				pc.schedulerConf, err)
@@ -195,7 +195,7 @@ func (pc *Scheduler) watchSchedulerConf(stopCh <-chan struct{}) {
 			}
 			klog.V(4).Infof("watch %s event: %v", pc.schedulerConf, event)
 			if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
-				pc.loadSchedulerConf()
+				pc.loadSchedulerConf() // 重新加载 scheduler config file
 				pc.cache.SetMetricsConf(pc.metricsConf)
 			}
 		case err, ok := <-errCh:

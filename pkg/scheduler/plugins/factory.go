@@ -48,7 +48,7 @@ func init() {
 	framework.RegisterPluginBuilder(gang.PluginName, gang.New)
 	framework.RegisterPluginBuilder(deviceshare.PluginName, deviceshare.New)
 	framework.RegisterPluginBuilder(predicates.PluginName, predicates.New)
-	framework.RegisterPluginBuilder(priority.PluginName, priority.New)
+	framework.RegisterPluginBuilder(priority.PluginName, priority.New) // 注册 priority plugin builder
 	framework.RegisterPluginBuilder(nodeorder.PluginName, nodeorder.New)
 	framework.RegisterPluginBuilder(conformance.PluginName, conformance.New)
 	framework.RegisterPluginBuilder(binpack.PluginName, binpack.New)

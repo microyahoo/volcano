@@ -94,11 +94,11 @@ func (alloc *Action) pickUpQueuesAndJobs(queues *util.PriorityQueue, jobsMap map
 
 		if _, found := jobsMap[job.Queue]; !found {
 			jobsMap[job.Queue] = util.NewPriorityQueue(ssn.JobOrderFn)
-			queues.Push(ssn.Queues[job.Queue])
+			queues.Push(ssn.Queues[job.Queue]) // 将 job 所在的 queue 根据 QueueOrderFn 加入 queues
 		}
 
 		klog.V(4).Infof("Added Job <%s/%s> into Queue <%s>", job.Namespace, job.Name, job.Queue)
-		jobsMap[job.Queue].Push(job)
+		jobsMap[job.Queue].Push(job) // 将 job 根据 JobOrderFn 加入 queue, 例如 priority plugin 会根据 job priority 进行排序
 	}
 }
 
@@ -136,7 +136,7 @@ func (alloc *Action) allocateResources(queues *util.PriorityQueue, jobsMap map[a
 
 		job := jobs.Pop().(*api.JobInfo)
 		if _, found = pendingTasks[job.UID]; !found {
-			tasks := util.NewPriorityQueue(ssn.TaskOrderFn)
+			tasks := util.NewPriorityQueue(ssn.TaskOrderFn) // 将 task 根据 TaskOrderFn 加入优先级队列, 例如 priority plugin 会根据 task priority 进行排序
 			for _, task := range job.TaskStatusIndex[api.Pending] {
 				// Skip BestEffort task in 'allocate' action.
 				if task.Resreq.IsEmpty() {
@@ -180,7 +180,7 @@ func (alloc *Action) allocateResourcesForTasks(tasks *util.PriorityQueue, job *a
 
 		klog.V(3).Infof("There are <%d> nodes for Job <%v/%v>", len(ssn.Nodes), job.Namespace, job.Name)
 
-		if err := ssn.PrePredicateFn(task); err != nil {
+		if err := ssn.PrePredicateFn(task); err != nil { // prePredicate
 			klog.V(3).Infof("PrePredicate for task %s/%s failed for: %v", task.Namespace, task.Name, err)
 			fitErrors := api.NewFitErrors()
 			for _, ni := range allNodes {
@@ -190,7 +190,7 @@ func (alloc *Action) allocateResourcesForTasks(tasks *util.PriorityQueue, job *a
 			break
 		}
 
-		predicateNodes, fitErrors := ph.PredicateNodes(task, allNodes, alloc.predicate, true)
+		predicateNodes, fitErrors := ph.PredicateNodes(task, allNodes, alloc.predicate, true) // predicateNodes
 		if len(predicateNodes) == 0 {
 			job.NodesFitErrors[task.UID] = fitErrors
 			break
@@ -247,7 +247,7 @@ func (alloc *Action) allocateResourcesForTasks(tasks *util.PriorityQueue, job *a
 		// Allocate idle resource to the task.
 		if task.InitResreq.LessEqual(bestNode.Idle, api.Zero) {
 			klog.V(3).Infof("Binding Task <%v/%v> to node <%v>", task.Namespace, task.Name, bestNode.Name)
-			if err := stmt.Allocate(task, bestNode); err != nil {
+			if err := stmt.Allocate(task, bestNode); err != nil { // allocate
 				klog.Errorf("Failed to bind Task %v on %v in Session %v, err: %v",
 					task.UID, bestNode.Name, ssn.UID, err)
 			} else {
@@ -262,7 +262,7 @@ func (alloc *Action) allocateResourcesForTasks(tasks *util.PriorityQueue, job *a
 			if task.InitResreq.LessEqual(bestNode.FutureIdle(), api.Zero) {
 				klog.V(3).Infof("Pipelining Task <%v/%v> to node <%v> for <%v> on <%v>",
 					task.Namespace, task.Name, bestNode.Name, task.InitResreq, bestNode.Releasing)
-				if err := stmt.Pipeline(task, bestNode.Name); err != nil {
+				if err := stmt.Pipeline(task, bestNode.Name); err != nil { // pipeline task
 					klog.Errorf("Failed to pipeline Task %v on %v in Session %v for %v.",
 						task.UID, bestNode.Name, ssn.UID, err)
 				} else {
@@ -279,10 +279,10 @@ func (alloc *Action) allocateResourcesForTasks(tasks *util.PriorityQueue, job *a
 	}
 
 	if ssn.JobReady(job) {
-		stmt.Commit()
+		stmt.Commit() // commit
 	} else {
 		if !ssn.JobPipelined(job) {
-			stmt.Discard()
+			stmt.Discard() // discard
 		}
 	}
 }

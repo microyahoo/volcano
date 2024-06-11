@@ -60,7 +60,7 @@ func isTerminated(status schedulingapi.TaskStatus) bool {
 // pi.Pod.Spec.SchedulerName is same as volcano scheduler's name, otherwise it will return nil.
 func (sc *SchedulerCache) getOrCreateJob(pi *schedulingapi.TaskInfo) *schedulingapi.JobInfo {
 	if len(pi.Job) == 0 {
-		if !commonutil.Contains(sc.schedulerNames, pi.Pod.Spec.SchedulerName) {
+		if !commonutil.Contains(sc.schedulerNames, pi.Pod.Spec.SchedulerName) { // 检查 pod 的 SchedulerName
 			klog.V(4).Infof("Pod %s/%s will not scheduled by %#v, skip creating PodGroup and Job for it",
 				pi.Pod.Namespace, pi.Pod.Name, sc.schedulerNames)
 		}
@@ -135,7 +135,7 @@ func (sc *SchedulerCache) getPodCSIVolumes(pod *v1.Pod) (map[v1.ResourceName]int
 			continue
 		}
 		if driverName == "" {
-			klog.V(5).InfoS("Could not find a CSI driver name for pvc(%s/%s), not counting volume", pvc.Namespace, pvc.Name)
+			klog.V(5).Infof("Could not find a CSI driver name for pvc(%s/%s), not counting volume", pvc.Namespace, pvc.Name)
 			continue
 		}
 

@@ -67,7 +67,7 @@ func (enqueue *Action) Execute(ssn *framework.Session) {
 			queues.Push(queue)
 		}
 
-		if job.IsPending() {
+		if job.IsPending() { // 判断 job 是否 pending
 			if _, found := jobsMap[job.Queue]; !found {
 				jobsMap[job.Queue] = util.NewPriorityQueue(ssn.JobOrderFn)
 			}
@@ -86,7 +86,7 @@ func (enqueue *Action) Execute(ssn *framework.Session) {
 		queue := queues.Pop().(*api.QueueInfo)
 
 		// skip the Queue that has no pending job
-		jobs, found := jobsMap[queue.UID]
+		jobs, found := jobsMap[queue.UID] // 获取队列中 pending 的 job
 		if !found || jobs.Empty() {
 			continue
 		}
@@ -94,7 +94,7 @@ func (enqueue *Action) Execute(ssn *framework.Session) {
 
 		if job.PodGroup.Spec.MinResources == nil || ssn.JobEnqueueable(job) {
 			ssn.JobEnqueued(job)
-			job.PodGroup.Status.Phase = scheduling.PodGroupInqueue
+			job.PodGroup.Status.Phase = scheduling.PodGroupInqueue // 修改 podgroup 状态为 Inqueue
 			ssn.Jobs[job.UID] = job
 		}
 

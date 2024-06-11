@@ -149,7 +149,7 @@ func openSession(cache cache.Cache) *Session {
 		jobStarvingFns:    map[string]api.ValidateFn{},
 	}
 
-	snapshot := cache.Snapshot()
+	snapshot := cache.Snapshot() // 获取 cluster info snapshot
 
 	ssn.Jobs = snapshot.Jobs
 	for _, job := range ssn.Jobs {
@@ -168,7 +168,7 @@ func openSession(cache cache.Cache) *Session {
 					Message:            vjr.Message,
 				}
 
-				if err := ssn.UpdatePodGroupCondition(job, jc); err != nil {
+				if err := ssn.UpdatePodGroupCondition(job, jc); err != nil { // 更新 podgroup status condition
 					klog.Errorf("Failed to update job condition: %v", err)
 				}
 			}

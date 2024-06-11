@@ -20,7 +20,7 @@ import "volcano.sh/volcano/pkg/scheduler/conf"
 
 // ApplyPluginConfDefaults sets option's filed to its default value if not set
 func ApplyPluginConfDefaults(option *conf.PluginOption) {
-	t := true
+	t := true // 默认全部开启
 
 	if option.EnabledJobOrder == nil {
 		option.EnabledJobOrder = &t

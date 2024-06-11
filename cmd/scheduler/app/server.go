@@ -55,7 +55,7 @@ import (
 )
 
 // Run the volcano scheduler.
-func Run(opt *options.ServerOption) error {
+func Run(opt *options.ServerOption) error { // run volcano scheduler
 	if opt.PrintVersion {
 		version.PrintVersionAndExit()
 	}
@@ -78,7 +78,7 @@ func Run(opt *options.ServerOption) error {
 		panic(err)
 	}
 
-	if opt.EnableMetrics {
+	if opt.EnableMetrics { // enable metrics
 		go func() {
 			http.Handle("/metrics", promHandler())
 			klog.Fatalf("Prometheus Http Server failed %s", http.ListenAndServe(opt.ListenAddress, nil))
