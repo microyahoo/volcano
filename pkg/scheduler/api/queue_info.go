@@ -28,7 +28,7 @@ type QueueID types.UID
 
 // QueueInfo will have all details about queue
 type QueueInfo struct {
-	UID  QueueID
+	UID  QueueID // 即为 queue name
 	Name string
 
 	Weight int32

@@ -102,7 +102,7 @@ func (info *TopologyInfo) Clone() *TopologyInfo {
 
 // TaskInfo will have all infos about the task
 type TaskInfo struct {
-	UID TaskID
+	UID TaskID // 即为 pod UID
 	Job JobID
 
 	Name      string
@@ -159,15 +159,15 @@ func getTaskID(pod *v1.Pod) TaskID {
 const TaskPriorityAnnotation = "volcano.sh/task-priority"
 
 // NewTaskInfo creates new taskInfo object for a Pod
-func NewTaskInfo(pod *v1.Pod) *TaskInfo { // 为 pod 创建 taskInfo
-	initResReq := GetPodResourceRequest(pod)
+func NewTaskInfo(pod *v1.Pod) *TaskInfo { // 为 pod 创建 taskInfo, 即将 pod 转化为 taskInfo
+	initResReq := GetPodResourceRequest(pod) // 计算 pod 申请的资源数，CPU 和 memory
 	resReq := initResReq
 	bestEffort := initResReq.IsEmpty()
-	preemptable := GetPodPreemptable(pod)
+	preemptable := GetPodPreemptable(pod) // 检查 pod 的 annotations 和 labels 中是否包含 Preemptable label `volcano.sh/preemptable`, 如果没有设置则默认为 true
 	revocableZone := GetPodRevocableZone(pod)
 	topologyInfo := GetPodTopologyInfo(pod)
 
-	jobID := getJobID(pod)
+	jobID := getJobID(pod) // 首先判断 pod 的 annotations 中是否包含 `scheduling.k8s.io/group-name`, 如果存在则 jobID 为 <pod-ns>/<group-name>, 不存在则为空
 
 	ti := &TaskInfo{
 		UID:           TaskID(pod.UID),
@@ -189,10 +189,10 @@ func NewTaskInfo(pod *v1.Pod) *TaskInfo { // 为 pod 创建 taskInfo
 	}
 
 	if pod.Spec.Priority != nil {
-		ti.Priority = *pod.Spec.Priority
+		ti.Priority = *pod.Spec.Priority // 设置 taskInfo 优先级，即为 pod 的优先级
 	}
 
-	if taskPriority, ok := pod.Annotations[TaskPriorityAnnotation]; ok {
+	if taskPriority, ok := pod.Annotations[TaskPriorityAnnotation]; ok { // 如果 Annotations 中有指定 `volcano.sh/task-priority`, 则覆盖 pod 中指定的优先级
 		if priority, err := strconv.ParseInt(taskPriority, 10, 32); err == nil {
 			ti.Priority = int32(priority)
 		}
@@ -314,7 +314,7 @@ type JobInfo struct {
 	NodesFitErrors map[TaskID]*FitErrors
 
 	// All tasks of the Job.
-	TaskStatusIndex       map[TaskStatus]tasksMap
+	TaskStatusIndex       map[TaskStatus]tasksMap // 根据 task 状态进行分类。 status -> task uid -> task
 	Tasks                 tasksMap
 	TaskMinAvailable      map[TaskID]int32
 	TaskMinAvailableTotal int32
@@ -386,7 +386,7 @@ func (ji *JobInfo) SetPodGroup(pg *PodGroup) {
 		}
 	}
 
-	ji.Preemptable = ji.extractPreemptable(pg)
+	ji.Preemptable = ji.extractPreemptable(pg) // 检查 Annotations 和 Labels 是否存在 `volcano.sh/preemptable`，如果不存在则默认为 false
 	ji.RevocableZone = ji.extractRevocableZone(pg)
 	ji.Budget = ji.extractBudget(pg)
 
@@ -519,7 +519,7 @@ func (ji *JobInfo) AddTaskInfo(ti *TaskInfo) {
 
 // UpdateTaskStatus is used to update task's status in a job.
 // If error occurs both task and job are guaranteed to be in the original state.
-func (ji *JobInfo) UpdateTaskStatus(task *TaskInfo, status TaskStatus) error {
+func (ji *JobInfo) UpdateTaskStatus(task *TaskInfo, status TaskStatus) error { // 将原来的记录删除，然后重新添加新的记录，会更新索引状态表
 	if err := validateStatusUpdate(task.Status, status); err != nil {
 		return err
 	}

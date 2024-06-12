@@ -145,7 +145,7 @@ func (s *Statement) unevict(reclaimee *api.TaskInfo) error {
 func (s *Statement) Pipeline(task *api.TaskInfo, hostname string) error {
 	job, found := s.ssn.Jobs[task.Job]
 	if found {
-		if err := job.UpdateTaskStatus(task, api.Pipelined); err != nil {
+		if err := job.UpdateTaskStatus(task, api.Pipelined); err != nil { // 更新 job 中 task 状态为 pipelined, 这里会更新索引状态表
 			klog.Errorf("Failed to update task <%v/%v> status to %v when pipeline in Session <%v>: %v",
 				task.Namespace, task.Name, api.Pipelined, s.ssn.UID, err)
 		}
@@ -239,13 +239,13 @@ func (s *Statement) Allocate(task *api.TaskInfo, nodeInfo *api.NodeInfo) (err er
 		}
 	}()
 
-	task.Pod.Spec.NodeName = hostname
+	task.Pod.Spec.NodeName = hostname // 更新 pod NodeName
 	task.PodVolumes = podVolumes
 
 	// Only update status in session
 	job, found := s.ssn.Jobs[task.Job]
 	if found {
-		if err := job.UpdateTaskStatus(task, api.Allocated); err != nil {
+		if err := job.UpdateTaskStatus(task, api.Allocated); err != nil { // 将原来 job 中的 task 记录删除，然后重新添加新的记录，会更新索引状态表
 			klog.Errorf("Failed to update task <%v/%v> status to %v when allocating in Session <%v>: %v",
 				task.Namespace, task.Name, api.Allocated, s.ssn.UID, err)
 			return err
@@ -296,7 +296,7 @@ func (s *Statement) allocate(task *api.TaskInfo) error {
 	}
 
 	if job, found := s.ssn.Jobs[task.Job]; found {
-		if err := job.UpdateTaskStatus(task, api.Binding); err != nil {
+		if err := job.UpdateTaskStatus(task, api.Binding); err != nil { // 更新 task 状态为 binding
 			klog.Errorf("Failed to update task <%v/%v> status to %v when binding in Session <%v>: %v",
 				task.Namespace, task.Name, api.Binding, s.ssn.UID, err)
 			return err
@@ -318,7 +318,7 @@ func (s *Statement) unallocate(task *api.TaskInfo) error {
 	// Update status in session
 	job, found := s.ssn.Jobs[task.Job]
 	if found {
-		if err := job.UpdateTaskStatus(task, api.Pending); err != nil {
+		if err := job.UpdateTaskStatus(task, api.Pending); err != nil { // 将 task 状态更新为 pending
 			klog.Errorf("Failed to update task <%v/%v> status to %v when unallocating in Session <%v>: %v",
 				task.Namespace, task.Name, api.Pending, s.ssn.UID, err)
 		}
@@ -385,7 +385,7 @@ func (s *Statement) Commit() {
 				klog.Errorf("Failed to evict task: %s", err.Error())
 			}
 		case Pipeline:
-			s.pipeline(op.task)
+			s.pipeline(op.task) // 空操作
 		case Allocate:
 			err := s.allocate(op.task)
 			if err != nil {

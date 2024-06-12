@@ -86,7 +86,7 @@ func (enqueue *Action) Execute(ssn *framework.Session) {
 		queue := queues.Pop().(*api.QueueInfo)
 
 		// skip the Queue that has no pending job
-		jobs, found := jobsMap[queue.UID] // 获取队列中 pending 的 job
+		jobs, found := jobsMap[queue.UID] // 获取队列中 pending 的 jobs
 		if !found || jobs.Empty() {
 			continue
 		}

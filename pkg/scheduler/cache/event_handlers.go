@@ -58,7 +58,7 @@ func isTerminated(status schedulingapi.TaskStatus) bool {
 
 // getOrCreateJob will return corresponding Job for pi if it exists, or it will create a Job and return it if
 // pi.Pod.Spec.SchedulerName is same as volcano scheduler's name, otherwise it will return nil.
-func (sc *SchedulerCache) getOrCreateJob(pi *schedulingapi.TaskInfo) *schedulingapi.JobInfo {
+func (sc *SchedulerCache) getOrCreateJob(pi *schedulingapi.TaskInfo) *schedulingapi.JobInfo { // 这里相当于会做 pod 过滤
 	if len(pi.Job) == 0 {
 		if !commonutil.Contains(sc.schedulerNames, pi.Pod.Spec.SchedulerName) { // 检查 pod 的 SchedulerName
 			klog.V(4).Infof("Pod %s/%s will not scheduled by %#v, skip creating PodGroup and Job for it",
@@ -211,7 +211,7 @@ func (sc *SchedulerCache) getCSIDriverInfoFromSC(pvc *v1.PersistentVolumeClaim) 
 func (sc *SchedulerCache) addTask(pi *schedulingapi.TaskInfo) error {
 	if len(pi.NodeName) != 0 {
 		if _, found := sc.Nodes[pi.NodeName]; !found {
-			sc.Nodes[pi.NodeName] = schedulingapi.NewNodeInfo(nil)
+			sc.Nodes[pi.NodeName] = schedulingapi.NewNodeInfo(nil) // 如果 cache 中没有记录此 pod 对应的 node 信息，则创建并更新
 			sc.Nodes[pi.NodeName].Name = pi.NodeName
 		}
 
@@ -234,12 +234,12 @@ func (sc *SchedulerCache) addTask(pi *schedulingapi.TaskInfo) error {
 }
 
 func (sc *SchedulerCache) NewTaskInfo(pod *v1.Pod) (*schedulingapi.TaskInfo, error) {
-	taskInfo := schedulingapi.NewTaskInfo(pod)
+	taskInfo := schedulingapi.NewTaskInfo(pod) // 将 pod 转化为 taskInfo
 	if err := sc.addPodCSIVolumesToTask(taskInfo); err != nil {
 		return taskInfo, err
 	}
 	// Update BestEffort because the InitResreq maybe changes
-	taskInfo.BestEffort = taskInfo.InitResreq.IsEmpty()
+	taskInfo.BestEffort = taskInfo.InitResreq.IsEmpty() // 判断 pod 是否有申请资源
 	return taskInfo, nil
 }
 
@@ -679,16 +679,16 @@ func getJobID(pg *schedulingapi.PodGroup) schedulingapi.JobID {
 
 // Assumes that lock is already acquired.
 func (sc *SchedulerCache) setPodGroup(ss *schedulingapi.PodGroup) error {
-	job := getJobID(ss)
+	job := getJobID(ss) // <pg-ns>/<pg-name>
 	if _, found := sc.Jobs[job]; !found {
 		sc.Jobs[job] = schedulingapi.NewJobInfo(job)
 	}
 
-	sc.Jobs[job].SetPodGroup(ss)
+	sc.Jobs[job].SetPodGroup(ss) // 将 podGroup 转化为 jobInfo
 
 	// TODO(k82cn): set default queue in admission.
 	if len(ss.Spec.Queue) == 0 {
-		sc.Jobs[job].Queue = schedulingapi.QueueID(sc.defaultQueue)
+		sc.Jobs[job].Queue = schedulingapi.QueueID(sc.defaultQueue) // 如果 podGroup 没有指定 queue，则设置为 default
 	}
 
 	metrics.UpdateE2eSchedulingStartTimeByJob(sc.Jobs[job].Name, string(sc.Jobs[job].Queue), sc.Jobs[job].Namespace,
@@ -711,7 +711,7 @@ func (sc *SchedulerCache) deletePodGroup(id schedulingapi.JobID) error {
 	// Unset SchedulingSpec
 	job.UnsetPodGroup()
 
-	sc.deleteJob(job)
+	sc.deleteJob(job) // 将 jobInfo 加入到 cache 的 DeletedJobs 队列中
 
 	return nil
 }

@@ -586,7 +586,7 @@ func (ssn *Session) QueueOrderFn(l, r interface{}) bool {
 	}
 
 	// If no queue order funcs, order queue by CreationTimestamp first, then by UID.
-	lv := l.(*api.QueueInfo)
+	lv := l.(*api.QueueInfo) // 如果没有指定 queueOrderFn，则首先按照创建时间进行排序，然后按照 UID 进行排序
 	rv := r.(*api.QueueInfo)
 	if lv.Queue.CreationTimestamp.Equal(&rv.Queue.CreationTimestamp) {
 		return lv.UID < rv.UID

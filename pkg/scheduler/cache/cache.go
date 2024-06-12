@@ -592,7 +592,7 @@ func newSchedulerCache(config *rest.Config, schedulerNames []string, defaultQueu
 	}
 
 	// add all events handlers
-	sc.addEventHandler()
+	sc.addEventHandler() // 通过 informer 监听事件，调用相应的回调函数来同步更新 cache 信息
 	// finally, init default volume binder which has dependencies on other informers
 	sc.setDefaultVolumeBinder()
 	return sc
@@ -656,7 +656,7 @@ func (sc *SchedulerCache) addEventHandler() {
 				return false
 			},
 			Handler: cache.ResourceEventHandlerFuncs{ // 监听 node 事件
-				AddFunc:    sc.AddNode, // 添加 node 到 cache
+				AddFunc:    sc.AddNode, // 添加 node 到 cache nodeQueue
 				UpdateFunc: sc.UpdateNode,
 				DeleteFunc: sc.DeleteNode,
 			},
@@ -717,7 +717,7 @@ func (sc *SchedulerCache) addEventHandler() {
 
 	if options.ServerOpts != nil && options.ServerOpts.EnablePriorityClass && utilfeature.DefaultFeatureGate.Enabled(features.PriorityClass) {
 		sc.pcInformer = informerFactory.Scheduling().V1().PriorityClasses()
-		sc.pcInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		sc.pcInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{ // 监听 PriorityClass
 			AddFunc:    sc.AddPriorityClass,
 			UpdateFunc: sc.UpdatePriorityClass,
 			DeleteFunc: sc.DeletePriorityClass,
@@ -895,7 +895,7 @@ func (sc *SchedulerCache) Evict(taskInfo *schedulingapi.TaskInfo, reason string)
 // Bind binds task to the target host.
 func (sc *SchedulerCache) Bind(tasks []*schedulingapi.TaskInfo) {
 	tmp := time.Now()
-	errTasks, err := sc.Binder.Bind(sc.kubeClient, tasks)
+	errTasks, err := sc.Binder.Bind(sc.kubeClient, tasks) // 使用默认的 binder 将 tasks 绑定到节点上
 	if err == nil {
 		klog.V(3).Infof("bind ok, latency %v", time.Since(tmp))
 	} else {
@@ -1280,14 +1280,14 @@ func (sc *SchedulerCache) BindTask() {
 
 		bindTasks := make([]*schedulingapi.TaskInfo, len(successfulTasks))
 		copy(bindTasks, successfulTasks)
-		sc.Bind(bindTasks)
+		sc.Bind(bindTasks) // 绑定 tasks
 	}(tmpBindCache)
 	sc.bindCache = sc.bindCache[0:0]
 }
 
 // Snapshot returns the complete snapshot of the cluster from cache
 func (sc *SchedulerCache) Snapshot() *schedulingapi.ClusterInfo {
-	sc.Mutex.Lock()
+	sc.Mutex.Lock() // 由于是获取某一时间点的 cache 快照信息，而 cache 又是一直变化的，因此需要加锁
 	defer sc.Mutex.Unlock()
 
 	snapshot := &schedulingapi.ClusterInfo{

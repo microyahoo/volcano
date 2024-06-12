@@ -45,7 +45,7 @@ func getTaskStatus(pod *v1.Pod) TaskStatus {
 			return Releasing
 		}
 
-		if len(pod.Spec.NodeName) == 0 {
+		if len(pod.Spec.NodeName) == 0 { // 如果 pod 没有分配 node, 则为 pending 状态
 			return Pending
 		}
 		return Bound

@@ -67,7 +67,7 @@ func (gp *gangPlugin) OnSessionOpen(ssn *framework.Session) {
 		}
 
 		vtn := job.ValidTaskNum()
-		if vtn < job.MinAvailable {
+		if vtn < job.MinAvailable { // 判断有效 task 个数是否小于 MinAvailable
 			return &api.ValidateResult{
 				Pass:   false,
 				Reason: v1beta1.NotEnoughPodsReason,

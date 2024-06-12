@@ -149,7 +149,7 @@ func openSession(cache cache.Cache) *Session {
 		jobStarvingFns:    map[string]api.ValidateFn{},
 	}
 
-	snapshot := cache.Snapshot() // 获取 cluster info snapshot
+	snapshot := cache.Snapshot() // 获取 cluster info snapshot，因为缓存数据会不断变化，为了保证同一个调度周期内数据的一致性，所以就拷贝一份副本
 
 	ssn.Jobs = snapshot.Jobs
 	for _, job := range ssn.Jobs {

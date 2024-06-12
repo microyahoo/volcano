@@ -245,9 +245,9 @@ func (alloc *Action) allocateResourcesForTasks(tasks *util.PriorityQueue, job *a
 		}
 
 		// Allocate idle resource to the task.
-		if task.InitResreq.LessEqual(bestNode.Idle, api.Zero) {
+		if task.InitResreq.LessEqual(bestNode.Idle, api.Zero) { // 分配 idle 资源给 task
 			klog.V(3).Infof("Binding Task <%v/%v> to node <%v>", task.Namespace, task.Name, bestNode.Name)
-			if err := stmt.Allocate(task, bestNode); err != nil { // allocate
+			if err := stmt.Allocate(task, bestNode); err != nil { // 为 task allocate 资源
 				klog.Errorf("Failed to bind Task %v on %v in Session %v, err: %v",
 					task.UID, bestNode.Name, ssn.UID, err)
 			} else {
@@ -259,7 +259,7 @@ func (alloc *Action) allocateResourcesForTasks(tasks *util.PriorityQueue, job *a
 				task.Namespace, task.Name, bestNode.Name)
 
 			// Allocate releasing resource to the task if any.
-			if task.InitResreq.LessEqual(bestNode.FutureIdle(), api.Zero) {
+			if task.InitResreq.LessEqual(bestNode.FutureIdle(), api.Zero) { // 分配将来可能 idle 的资源给 task
 				klog.V(3).Infof("Pipelining Task <%v/%v> to node <%v> for <%v> on <%v>",
 					task.Namespace, task.Name, bestNode.Name, task.InitResreq, bestNode.Releasing)
 				if err := stmt.Pipeline(task, bestNode.Name); err != nil { // pipeline task
