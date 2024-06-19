@@ -30,7 +30,7 @@ import (
 
 const (
 	// PluginName indicates name of volcano scheduler plugin.
-	PluginName = "binpack"
+	PluginName = "binpack" // 装箱调度
 )
 
 const (
@@ -190,7 +190,7 @@ func (bp *binpackPlugin) OnSessionOpen(ssn *framework.Session) {
 		return binPackingScore, nil
 	}
 	if bp.weight.BinPackingWeight != 0 {
-		ssn.AddNodeOrderFn(bp.Name(), nodeOrderFn)
+		ssn.AddNodeOrderFn(bp.Name(), nodeOrderFn) // 注册节点排序方法
 	} else {
 		klog.Infof("binpack weight is zero, skip node order function")
 	}
@@ -223,7 +223,7 @@ func BinPackingScore(task *api.TaskInfo, node *api.NodeInfo, weight priorityWeig
 			continue
 		}
 
-		resourceScore, err := ResourceBinPackingScore(request, allocate, nodeUsed, resourceWeight)
+		resourceScore, err := ResourceBinPackingScore(request, allocate, nodeUsed, resourceWeight) // weight * (request + used) / allocatable
 		if err != nil {
 			klog.V(4).Infof("task %s/%s cannot binpack node %s: resource: %s is %s, need %f, used %f, allocatable %f",
 				task.Namespace, task.Name, node.Name, resource, err.Error(), request, nodeUsed, allocate)
@@ -238,24 +238,25 @@ func BinPackingScore(task *api.TaskInfo, node *api.NodeInfo, weight priorityWeig
 
 	// mapping the result from [0, weightSum] to [0, 10(MaxPriority)]
 	if weightSum > 0 {
-		score /= float64(weightSum)
+		score /= float64(weightSum) // 资源总得分/总的权重
 	}
-	score *= float64(k8sFramework.MaxNodeScore * int64(weight.BinPackingWeight))
+	score *= float64(k8sFramework.MaxNodeScore * int64(weight.BinPackingWeight)) // 节点总得分按照binpack.weight * (CPU.score + Memory.score + GPU.score + others.score) / (CPU.weight+ Memory.weight+ GPU.weight+ others.weight) * 100
 
 	return score
 }
 
 // ResourceBinPackingScore calculate the binpack score for resource with provided info
-func ResourceBinPackingScore(requested, capacity, used float64, weight int) (float64, error) {
-	if capacity == 0 || weight == 0 {
+// weight * (request + used) / allocatable 即权重值越高，得分越高，节点资源使用量越满，得分越高
+func ResourceBinPackingScore(requested, allocatable, used float64, weight int) (float64, error) {
+	if allocatable == 0 || weight == 0 {
 		return 0, nil
 	}
 
 	usedFinally := requested + used
-	if usedFinally > capacity {
+	if usedFinally > allocatable {
 		return 0, fmt.Errorf("not enough")
 	}
 
-	score := usedFinally * float64(weight) / capacity
+	score := usedFinally * float64(weight) / allocatable
 	return score, nil
-}
+} // 参考文档： https://support.huaweicloud.com/intl/zh-cn/usermanual-cce/cce_10_0773.html
