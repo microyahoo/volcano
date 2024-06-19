@@ -33,7 +33,7 @@ import (
 )
 
 // PluginName indicates name of volcano scheduler plugin.
-const PluginName = "drf"
+const PluginName = "drf" // 公平调度 dominant resource fairness, DRF 就是 max-min fairness 算法的泛化版本
 
 var shareDelta = 0.000001
 
@@ -206,7 +206,7 @@ func (drf *drfPlugin) OnSessionOpen(ssn *framework.Session) {
 		}
 
 		// Calculate the init share of Job
-		drf.updateJobShare(job.Namespace, job.Name, attr)
+		drf.updateJobShare(job.Namespace, job.Name, attr) // 计算每个 job 的 dominant resource 和 share
 
 		drf.jobAttrs[job.UID] = attr
 
@@ -324,7 +324,7 @@ func (drf *drfPlugin) OnSessionOpen(ssn *framework.Session) {
 		ssn.AddReclaimableFn(drf.Name(), reclaimFn)
 	}
 
-	jobOrderFn := func(l interface{}, r interface{}) int {
+	jobOrderFn := func(l interface{}, r interface{}) int { // 根据 Share 值对比，如果 Job 1 的资源请求量小于Job 2，按照最大最小公平算法分配策略，Job 1 的优先级高于Job 2。
 		lv := l.(*api.JobInfo)
 		rv := r.(*api.JobInfo)
 
@@ -342,7 +342,7 @@ func (drf *drfPlugin) OnSessionOpen(ssn *framework.Session) {
 		return 1
 	}
 
-	ssn.AddJobOrderFn(drf.Name(), jobOrderFn)
+	ssn.AddJobOrderFn(drf.Name(), jobOrderFn) // 注册 job 排序方法
 
 	// Register event handlers.
 	ssn.AddEventHandler(&framework.EventHandler{
@@ -503,10 +503,10 @@ func (drf *drfPlugin) calculateShare(allocated, totalResource *api.Resource) (st
 	res := float64(0)
 	dominantResource := ""
 	for _, rn := range totalResource.ResourceNames() {
-		share := helpers.Share(allocated.Get(rn), totalResource.Get(rn))
+		share := helpers.Share(allocated.Get(rn), totalResource.Get(rn)) // allocated/total
 		if share > res {
 			res = share
-			dominantResource = string(rn)
+			dominantResource = string(rn) // 确定 dominant resource
 		}
 	}
 
@@ -518,4 +518,4 @@ func (drf *drfPlugin) OnSessionClose(session *framework.Session) {
 	drf.totalResource = api.EmptyResource()
 	drf.totalAllocated = api.EmptyResource()
 	drf.jobAttrs = map[api.JobID]*drfAttr{}
-}
+} // https://support.huaweicloud.com/intl/zh-cn/usermanual-cce/cce_10_0777.html

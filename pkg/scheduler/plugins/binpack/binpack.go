@@ -223,7 +223,7 @@ func BinPackingScore(task *api.TaskInfo, node *api.NodeInfo, weight priorityWeig
 			continue
 		}
 
-		resourceScore, err := ResourceBinPackingScore(request, allocate, nodeUsed, resourceWeight) // weight * (request + used) / allocatable
+		resourceScore, err := ResourceBinPackingScore(request, allocate, nodeUsed, resourceWeight) // weight * (request + used) / allocatable 因此，如果对应资源的权重为 0，则此资源对应的 score 也为 0，相当于此资源不参与计算得分
 		if err != nil {
 			klog.V(4).Infof("task %s/%s cannot binpack node %s: resource: %s is %s, need %f, used %f, allocatable %f",
 				task.Namespace, task.Name, node.Name, resource, err.Error(), request, nodeUsed, allocate)

@@ -425,7 +425,7 @@ func (ssn *Session) JobEnqueueable(obj interface{}) bool {
 			}
 
 			res := fn(obj)
-			if res < 0 {
+			if res < 0 { // 如果返回值小于0，则直接返回，跳过后面的 jobEnqueueableFn
 				return false
 			}
 			if res > 0 {
