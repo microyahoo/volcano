@@ -35,7 +35,7 @@ const (
 )
 
 var (
-	e2eSchedulingLatency = promauto.NewHistogram(
+	e2eSchedulingLatency = promauto.NewHistogram( // 调度一次花费的时间
 		prometheus.HistogramOpts{
 			Subsystem: VolcanoNamespace,
 			Name:      "e2e_scheduling_latency_milliseconds",
@@ -44,7 +44,7 @@ var (
 		},
 	)
 
-	e2eJobSchedulingLatency = promauto.NewHistogram(
+	e2eJobSchedulingLatency = promauto.NewHistogram( // 从创建到给 job 里的 task bind 到节点的时间
 		prometheus.HistogramOpts{
 			Subsystem: VolcanoNamespace,
 			Name:      "e2e_job_scheduling_latency_milliseconds",
@@ -53,7 +53,7 @@ var (
 		},
 	)
 
-	e2eJobSchedulingDuration = promauto.NewGaugeVec(
+	e2eJobSchedulingDuration = promauto.NewGaugeVec( // job 从创建到为其 tasks bind 到节点的时间
 		prometheus.GaugeOpts{
 			Subsystem: VolcanoNamespace,
 			Name:      "e2e_job_scheduling_duration",
